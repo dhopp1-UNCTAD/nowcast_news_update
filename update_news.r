@@ -31,7 +31,9 @@ get_file_dates <- function (path) {
 
 gen_data <- function(catalog, target_variable, data) {
   catalog_info <- catalog %>% 
-    .[.[,target_variable] == 1,]
+    .[.[,target_variable] == 1,] %>% 
+    select(-url, -download_group) %>% # mar_cn is not distinct because getting data is split into two groups 
+    distinct()
   vars <- catalog_info$code
   blocks <- catalog_info %>% 
     select(starts_with(paste0(target_variable, "_block"))) %>% data.frame
