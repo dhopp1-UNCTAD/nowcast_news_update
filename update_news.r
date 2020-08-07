@@ -3,11 +3,12 @@ suppressPackageStartupMessages({
   library(nowcastDFM)
 })
 options(warn=-1)
+options(scipen=500)
 
 ### options
-reestimate_model <- TRUE
-newest_database <- "2020-08-06" # which date database to run as latest data, e.g. "2020-08-06". Leave NA to calculate automatically.
-second_newest_database <- "2020-07-01" # e.g. "2020-08-05". Leave NA to calculate automatically.
+reestimate_model <- FALSE
+newest_database <- NA # which date database to run as latest data, e.g. "2020-08-06". Leave NA to calculate automatically.
+second_newest_database <- NA # e.g. "2020-08-05". Leave NA to calculate automatically.
 which_model <- NA # which already estimated model to run, e.g. "2020-08-06". Leave NA to run latest one.
 target_period <- as.Date("2020-06-01") # as.Date("2020-06-01") which date to be forecast for the news. Leave NA to run for current quarter.
 
@@ -140,6 +141,10 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
     ggtitle(paste0(target_variable, ", ", target_period, " forecast evolution"))
   
   # save plot and final_df
+  # prevent scientific notation in csv
+  for (i in 1:ncol(final_df)) {
+    final_df[,i] <- as.character(final_df[,i]) %>% sapply(., function(x) str_replace(x, ",", "."))
+  }
   write_csv(final_df, paste0(news_directory, newest_database, "_plot_data.csv"))
   ggsave(paste0(news_directory, newest_database, "_plot_data.png"), height=10, width=20)
 }
