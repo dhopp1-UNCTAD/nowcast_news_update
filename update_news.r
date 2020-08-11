@@ -90,61 +90,67 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
     new_data[nrow(new_data)+1,"date"] <- add.months(new_data[nrow(new_data)+1-1,"date"], 1)
   }
   
-  news <- gen_news(old_data, new_data, output_dfm, target_variable, target_period)
+  # break if no new data releases
+  status <- tryCatch({
+    news <- gen_news(old_data, new_data, output_dfm, target_variable, target_period)
+    
+    # saving news directory
+    news_directory <- paste0(historical_news_directory, target_variable, "/", target_period, "/")
+    if (!dir.exists(news_directory)) { dir.create(news_directory, recursive=TRUE) }
+    
+    saveRDS(news, paste0(news_directory, second_newest_database, "_to_", newest_database, "_news.rds"))
+    TRUE },
+    error = function(e) {
+      FALSE })
   
-  # saving news directory
-  news_directory <- paste0(historical_news_directory, target_variable, "/", target_period, "/")
-  if (!dir.exists(news_directory)) { dir.create(news_directory, recursive=TRUE) }
-  
-  saveRDS(news, paste0(news_directory, second_newest_database, "_to_", newest_database, "_news.rds"))
-  
-  
-  ### generating visualizations
-  files <- list.files(news_directory) %>% 
-    .[sapply(., function(x) grepl("news", x))]
-  all_news <- list()
-  # reading in historical news
-  for (file in files) {
-    all_news[[file]] <-readRDS(paste0(news_directory, file))
-  }
-  
-  # creating plotting df
-  rm(final_df)
-  for (file in files) {
-    forecast <- all_news[[file]]$y_new
-    date <- as.Date(str_replace(str_split(file, "_to_")[[1]][2], "_news.rds", ""))
-    revisions <- all_news[[file]]$impact_revisions
-    row_names <- row.names(all_news[[file]]$news_table)
-    impact <- all_news[[file]]$news_table$Impact
-    df <- data.frame(
-      date_forecast = date,
-      forecast = forecast,
-      impact_revisions = revisions
-    )
-    df[,row_names] <- impact
-    if(exists("final_df")) {
-      final_df <- rbind(final_df, df)
-    } else {
-      final_df <- df
+  if (status) {
+    ### generating visualizations
+    files <- list.files(news_directory) %>% 
+      .[sapply(., function(x) grepl("news", x))]
+    all_news <- list()
+    # reading in historical news
+    for (file in files) {
+      all_news[[file]] <-readRDS(paste0(news_directory, file))
     }
+    
+    # creating plotting df
+    rm(final_df)
+    for (file in files) {
+      forecast <- all_news[[file]]$y_new
+      date <- as.Date(str_replace(str_split(file, "_to_")[[1]][2], "_news.rds", ""))
+      revisions <- all_news[[file]]$impact_revisions
+      row_names <- row.names(all_news[[file]]$news_table)
+      impact <- all_news[[file]]$news_table$Impact
+      df <- data.frame(
+        date_forecast = date,
+        forecast = forecast,
+        impact_revisions = revisions
+      )
+      df[,row_names] <- impact
+      if(exists("final_df")) {
+        final_df <- rbind(final_df, df)
+      } else {
+        final_df <- df
+      }
+    }
+    
+    plot_df <- final_df %>% 
+      gather(series, value, -date_forecast) %>% 
+      mutate(series = factor(series, levels=(colnames(final_df[,2:ncol(final_df)]) %>% sort())), value=value * 100)
+    
+    ggplot() + 
+      geom_bar(data=filter(plot_df, series != "forecast"), aes(x=date_forecast, y=value, fill=series), stat="identity") +
+      geom_line(data=filter(plot_df, series == "forecast"), aes(x=date_forecast, y=value, color=series)) +
+      scale_color_manual(values="black") +
+      labs(y = "%", x="Date forecast made", color="", fill="Variable contribution") +
+      ggtitle(paste0(target_variable, ", ", target_period, " forecast evolution"))
+    
+    # save plot and final_df
+    # prevent scientific notation in csv
+    for (i in 1:ncol(final_df)) {
+      final_df[,i] <- as.character(final_df[,i]) %>% sapply(., function(x) str_replace(x, ",", "."))
+    }
+    write_csv(final_df, paste0(news_directory, newest_database, "_plot_data.csv"))
+    ggsave(paste0(news_directory, newest_database, "_plot_data.png"), height=10, width=20)
   }
-  
-  plot_df <- final_df %>% 
-    gather(series, value, -date_forecast) %>% 
-    mutate(series = factor(series, levels=(colnames(final_df[,2:ncol(final_df)]) %>% sort())), value=value * 100)
-  
-  ggplot() + 
-    geom_bar(data=filter(plot_df, series != "forecast"), aes(x=date_forecast, y=value, fill=series), stat="identity") +
-    geom_line(data=filter(plot_df, series == "forecast"), aes(x=date_forecast, y=value, color=series)) +
-    scale_color_manual(values="black") +
-    labs(y = "%", x="Date forecast made", color="", fill="Variable contribution") +
-    ggtitle(paste0(target_variable, ", ", target_period, " forecast evolution"))
-  
-  # save plot and final_df
-  # prevent scientific notation in csv
-  for (i in 1:ncol(final_df)) {
-    final_df[,i] <- as.character(final_df[,i]) %>% sapply(., function(x) str_replace(x, ",", "."))
-  }
-  write_csv(final_df, paste0(news_directory, newest_database, "_plot_data.csv"))
-  ggsave(paste0(news_directory, newest_database, "_plot_data.png"), height=10, width=20)
 }
