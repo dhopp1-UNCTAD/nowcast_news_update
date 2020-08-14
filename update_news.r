@@ -3,6 +3,7 @@ suppressPackageStartupMessages({
   library(nowcastDFM)
 })
 options(warn=-1)
+Sys.setlocale(category = "LC_NUMERIC", locale = "en_US.UTF-8")
 options(scipen=500)
 
 ### options
@@ -41,7 +42,8 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
     blocks <- catalog_info %>% 
       select(starts_with(paste0(target_variable, "_block"))) %>% data.frame
     data <- data[,c("date", vars)] %>% data.frame
-    return (list(data=data, blocks=blocks))
+    p <- catalog[1,paste0(target_variable, "_p")] %>% pull
+    return (list(data=data, blocks=blocks, p=p))
   }
   
   catalog <- read_csv(paste0(helper_directory, "catalog.csv"))
@@ -63,7 +65,8 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
     info <- gen_data(catalog, target_variable, newest_data)
     data <- info$data
     blocks <- info$blocks
-    output_dfm <- dfm(data, blocks, p=1, max_iter=1500, threshold=1e-5)
+    p <- info$p
+    output_dfm <- dfm(data, blocks, p=p, max_iter=1500, threshold=1e-5)
     saveRDS(output_dfm, paste0(estimated_models_directory, target_variable, "/", newest_database, "_", target_variable, "_output_dfm.rds"))
   } else {
     available_dfms <- get_file_dates(paste0(estimated_models_directory, target_variable))
