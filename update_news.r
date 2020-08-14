@@ -35,12 +35,23 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
   
   gen_data <- function(catalog, target_variable, data) {
     catalog_info <- catalog %>% 
-      .[.[,target_variable] == 1,] %>% 
+      .[.[,target_variable] != 0,] %>% 
       select(-url, -download_group) %>% # mar_cn is not distinct because getting data is split into two groups 
       distinct()
-    vars <- catalog_info$code
+    vars <- catalog_info[order(catalog_info[,target_variable] %>% pull),]$code # order is important for the blocks
     blocks <- catalog_info %>% 
-      select(starts_with(paste0(target_variable, "_block"))) %>% data.frame
+      select(starts_with(paste0(target_variable, "_block"))) %>% 
+      data.frame
+    blocks <- blocks[order(blocks[,1]),] %>% data.frame
+    for (col in colnames(blocks)) {
+      for (row in 1:nrow(blocks)) {
+        if (blocks[row, col] > 0) {
+          blocks[row, col] <- 1 
+        } else {
+          blocks[row, col] <- 0
+        }
+      }
+    }
     data <- data[,c("date", vars)] %>% data.frame
     p <- catalog[1,paste0(target_variable, "_p")] %>% pull
     return (list(data=data, blocks=blocks, p=p))
