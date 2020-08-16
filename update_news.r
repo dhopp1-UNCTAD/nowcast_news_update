@@ -105,6 +105,7 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
   }
   
   # enforce just one new data point per series, because the news_dfm function can't properly handle it when more than one new datapoint is published. The additional data will show up in the next week's news.
+  output_newest <- read_csv(paste0(output_directory, newest_database, "_database_tf.csv"))
   for (col in colnames(new_data)[2:length(colnames(new_data))]) {
     last_data_point_old <- 0
     for (i in seq(length(new_data[,col]), 1, by=-1)) {
@@ -114,7 +115,14 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
       }
     }
     new_data[(last_data_point_old+2):nrow(new_data), col] <- NA
+    # persist it in /output/ folder
+    to_append <- data.frame(date=new_data[,"date"], x=new_data[,col])
+    colnames(to_append) <- c("date", col)
+    output_newest <- output_newest %>% select(-!!col) %>% 
+      left_join(to_append, by="date")
   }
+  write_csv(output_newest, paste0(output_directory, newest_database, "_database_tf.csv"))
+  
   
   # break if no new data releases
   status <- tryCatch({
