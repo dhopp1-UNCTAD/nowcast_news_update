@@ -104,6 +104,18 @@ for (target_variable in c("x_world", "x_vol_world2", "x_servs_world")) { # 3 opt
     new_data[nrow(new_data)+1,"date"] <- add.months(new_data[nrow(new_data)+1-1,"date"], 1)
   }
   
+  # enforce just one new data point per series, because the news_dfm function can't properly handle it when more than one new datapoint is published. The additional data will show up in the next week's news.
+  for (col in colnames(new_data)[2:length(colnames(new_data))]) {
+    last_data_point_old <- 0
+    for (i in seq(length(new_data[,col]), 1, by=-1)) {
+      if (!is.na(old_data[i,col]) & last_data_point_old == 0) {
+        last_data_point_old <- i
+        break
+      }
+    }
+    new_data[(last_data_point_old+2):nrow(new_data), col] <- NA
+  }
+  
   # break if no new data releases
   status <- tryCatch({
     news <- gen_news(old_data, new_data, output_dfm, target_variable, target_period)
