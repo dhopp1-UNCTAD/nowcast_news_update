@@ -94,8 +94,8 @@ lag_data <- function(data, catalog, lag_date) {
 ### helper functions
 
 ### generating plot for a time period and target
-latest_database <- as.Date("2020-09-08")
-target_variable <- "x_world"
+latest_database <- as.Date("2020-09-15")
+target_variable <- "x_vol_world2" # x_world, x_servs_world, x_vol_world2
 data <- read_csv(paste0(output_directory, latest_database, "_database_tf.csv")) %>% data.frame
 reestimate <- paste0("estimated_models/", target_variable, "/2020-01-01_", target_variable, "_output_dfm.rds") # put file path of esimtated dfm here, or TRUE to reestimate from catalog, e.g. "estimated_models/x_world/2020-01-01_x_world_output_dfm.rds"
 target_period <- as.Date("2020-09-01")
@@ -113,7 +113,7 @@ if (reestimate==TRUE) {
 }
 
 # add artificial lag months
-database_dates <- c("2020-08-07","2020-08-16","2020-08-25", "2020-09-01", "2020-09-08")
+database_dates <- c("2020-08-07","2020-08-16","2020-08-25", "2020-09-01", "2020-09-08", "2020-09-15")
 which_months <- c((seq(target_period, length=4, by="-1 months") %>% sort), (seq(target_period, length=5, by="1 months") %>% sort)) %>% unique
 which_months <- which_months[which_months < Sys.Date()]
 which_months <- which_months[!(which_months %in% as.Date(database_dates))] # don't add dates already in the manual database dates
