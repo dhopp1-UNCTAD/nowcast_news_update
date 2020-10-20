@@ -1,5 +1,6 @@
 library(tidyverse)
 library(nowcastDFM)
+Sys.setlocale(category = "LC_NUMERIC", locale = "en_US.UTF-8")
 
 source("src/helper.r")
 source("src/gen_plots.r")

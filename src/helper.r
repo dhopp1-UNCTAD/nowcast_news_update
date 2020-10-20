@@ -86,7 +86,8 @@ lag_data <- function(data, catalog, lag_date) {
 
 # update the plot data for the unctad nowcast web app
 update_nowcast_web_data <- function(unctad_nowcast_web_directory, latest_database, target_period) {
-  data <- read_csv(paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv")) %>% data.frame
+  data <- read_csv(paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv")) %>% data.frame %>% 
+    filter(!is.na(target_period))
   for (targ in c("x_world", "x_servs_world", "x_vol_world2")) {
     plot_data <- read_csv(paste0("output/", latest_database, "_", targ, "_plot_df.csv"))
     data <- data %>%
@@ -95,5 +96,7 @@ update_nowcast_web_data <- function(unctad_nowcast_web_directory, latest_databas
       mutate(target=targ, target_period=target_period)
     data <- rbind(data, new_data)
   }
+  data <- data %>%
+    mutate(target_period=as.Date(target_period, origin="1970-01-01"))
   write_csv(data, paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv"))
 }
