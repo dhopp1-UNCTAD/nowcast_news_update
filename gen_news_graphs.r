@@ -30,7 +30,7 @@ for (target_variable in c("x_world", "x_servs_world", "x_vol_world2")) {
 
 # updating data file of unctad nowcast website
 if (exists("unctad_nowcast_web_directory")) {
-  update_nowcast_web_data(unctad_nowcast_web_directory, latest_database, target_period)
+  update_nowcast_web_data(unctad_nowcast_web_directory, latest_database, target_period, output_directory)
 }
 
 cat("\033[0;32mNowcasts successfully updated\033[0m\n")
