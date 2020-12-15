@@ -12,7 +12,7 @@ unctad_nowcast_web_directory <- "/home/danhopp/dhopp1/UNCTAD/unctad-nowcast-web/
 catalog <- read_csv(paste0(helper_directory, "catalog.csv"))
 
 # parameter, which quarter to nowcast
-for (target_period in c("2020-09-01", "2020-12-01")) {
+for (target_period in c("2020-12-01", "2021-03-01")) {
   target_period <- as.Date(target_period)
   # generating new plots and forecasts
   database_dates <- get_databases(output_directory)$database_dates
@@ -25,7 +25,8 @@ for (target_period in c("2020-09-01", "2020-12-01")) {
       .[length(.)] %>% 
       paste0("estimated_models/", target_variable, "/", .)
     save_directory <- "output/"
-    gen_plots(database_dates, latest_database, target_variable, target_period, reestimate, save_directory) 
+    limited_db_dates <- database_dates[as.numeric(difftime(target_period, database_dates, units="days")) <= 93] # to not get so much history
+    gen_plots(limited_db_dates, latest_database, target_variable, target_period, reestimate, save_directory) 
   }
   
   # updating data file of unctad nowcast website
