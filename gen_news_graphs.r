@@ -6,9 +6,15 @@ source("src/helper.r")
 source("src/gen_plots.r")
 
 # directory locations
-output_directory <- "/home/danhopp/dhopp1/UNCTAD/nowcast_data_update/output/" # location of the database files from nowcast_data_update
-helper_directory <- "/home/danhopp/dhopp1/UNCTAD/nowcast_data_update/helper/" # location of helper files, like catalog.csv, from nowcast_data_update
-unctad_nowcast_web_directory <- "/home/danhopp/dhopp1/UNCTAD/unctad-nowcast-web/" # location of bokeh application for unctad nowcast web app, comment out this line if unsure
+if (Sys.info()[["sysname"]] == "Darwin") {
+  output_directory <- "/Users/danhopp/dhopp1/UNCTAD/nowcast_data_update/output/" # location of the database files from nowcast_data_update
+  helper_directory <- "/Users/danhopp/dhopp1/UNCTAD/nowcast_data_update/helper/" # location of helper files, like catalog.csv, from nowcast_data_update
+  unctad_nowcast_web_directory <- "/Users/danhopp/dhopp1/UNCTAD/unctad-nowcast-web/" # location of bokeh application for unctad nowcast web app, comment out this line if unsure
+} else {
+  output_directory <- "/home/danhopp/dhopp1/UNCTAD/nowcast_data_update/output/" # location of the database files from nowcast_data_update
+  helper_directory <- "/home/danhopp/dhopp1/UNCTAD/nowcast_data_update/helper/" # location of helper files, like catalog.csv, from nowcast_data_update
+  unctad_nowcast_web_directory <- "/home/danhopp/dhopp1/UNCTAD/unctad-nowcast-web/" # location of bokeh application for unctad nowcast web app, comment out this line if unsure
+}
 catalog <- read_csv(paste0(helper_directory, "catalog.csv"))
 
 # parameter, which quarter to nowcast
