@@ -18,7 +18,7 @@ if (Sys.info()[["sysname"]] == "Darwin") {
 catalog <- read_csv(paste0(helper_directory, "catalog.csv"))
 
 # parameter, which quarter to nowcast
-for (target_period in c("2021-06-01", "2021-03-01")) {
+for (target_period in c("2020-06-01", "2020-09-01", "2020-12-01", "2021-03-01", "2021-06-01")) {
   target_period <- as.Date(target_period)
   # generating new plots and forecasts
   database_dates <- get_databases(output_directory)$database_dates
@@ -31,7 +31,9 @@ for (target_period in c("2021-06-01", "2021-03-01")) {
       .[length(.)] %>% 
       paste0("estimated_models/", target_variable, "/", .)
     save_directory <- "output/"
-    limited_db_dates <- database_dates[as.numeric(difftime(target_period, database_dates, units="days")) <= 93] # to not get so much history
+    limited_db_dates <- database_dates %>% 
+      .[as.numeric(difftime(target_period, ., units="days")) <= 93] %>%  # only starting 93 days before the target period
+      .[as.numeric(difftime(., target_period, units="days")) <= 93] # ending 93 days after the target period
     gen_plots(limited_db_dates, latest_database, target_variable, target_period, reestimate, save_directory) 
   }
   

@@ -100,6 +100,11 @@ update_nowcast_web_data <- function(unctad_nowcast_web_directory, latest_databas
     mutate(target_period=as.Date(target_period, origin="1970-01-01"))
   write_csv(data, paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv"))
   
-  # moving the latest database
-  file.copy(paste0(output_directory, latest_database, "_database_tf.csv"), paste0(unctad_nowcast_web_directory, "nowcasts/data/actuals.csv"))
+  # moving the latest database, adding full # of rows if necessary
+  add.months <- function(date,n) seq(date, by = paste (n, "months"), length = 2)[2]
+  db <- read_csv(paste0(output_directory, latest_database, "_database_tf.csv"))
+  while (max(db$date) < target_period) {
+    db[nrow(db)+1, "date"] <- add.months(max(db$date), 1)
+  }
+  write_csv(db, paste0(unctad_nowcast_web_directory, "nowcasts/data/actuals.csv"))
 }
