@@ -18,7 +18,7 @@ if (Sys.info()[["sysname"]] == "Darwin") {
 catalog <- read_csv(paste0(helper_directory, "catalog.csv"))
 
 # parameter, which quarter to nowcast
-for (target_period in c("2020-12-01", "2021-03-01")) {
+for (target_period in c("2021-06-01", "2021-03-01")) {
   target_period <- as.Date(target_period)
   # generating new plots and forecasts
   database_dates <- get_databases(output_directory)$database_dates
