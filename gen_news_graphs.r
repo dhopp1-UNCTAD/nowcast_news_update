@@ -18,7 +18,17 @@ if (Sys.info()[["sysname"]] == "Darwin") {
 catalog <- read_csv(paste0(helper_directory, "catalog.csv"))
 
 # parameter, which quarter to nowcast
-for (target_period in c("2020-06-01", "2020-09-01", "2020-12-01", "2021-03-01", "2021-06-01")) {
+target_periods <- c("2020-06-01")
+while (as.numeric(difftime(
+  as.character(seq(as.Date(max(target_periods)), by = paste (3, "months"), length = 2)[2]), # only continue if the addition is less than 93 days away
+  Sys.Date(), units="days")) <= 93) {
+  target_periods <- c(
+    target_periods, 
+    as.character(seq(as.Date(max(target_periods)), by = paste (3, "months"), length = 2)[2])
+  )
+}
+
+for (target_period in target_periods) {
   target_period <- as.Date(target_period)
   # generating new plots and forecasts
   database_dates <- get_databases(output_directory)$database_dates
