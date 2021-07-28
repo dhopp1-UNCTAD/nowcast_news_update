@@ -45,22 +45,17 @@ gen_news_graphs <- function(output_dfm, target_variable, target_period, dates_li
     gather(series, value, -date_forecast) %>% 
     mutate(series = factor(series, levels=(colnames(final_df[,2:ncol(final_df)]) %>% sort())), value=value * 100)
   
-  actual <- data[data$date == target_period, target_variable] * 100
   p <- ggplot() + 
     geom_bar(data=filter(plot_df, series != "forecast"), aes(x=date_forecast, y=value, fill=series), stat="identity") +
     geom_line(data=filter(plot_df, series == "forecast"), aes(x=date_forecast, y=value, color=series)) +
     scale_color_manual(values="black") +
     labs(y = "%", x="Date forecast made", color="", fill="Variable contribution") +
     ggtitle(paste0(target_variable, ", ", target_period, " forecast evolution"))
-  if (length(actual) > 0) {
-    p <- p + geom_hline(aes(yintercept=actual), linetype="dashed", color="#444444") +# plotting actual as a dotted line
-      annotate("text", dates_list[1], actual, vjust = 1, label = paste0("Actual")) 
-  }
   
   return (list(p=p, plot_df=plot_df))
 }
 
-# lag a data according to publication lag
+# lag a data according to publication lag, DEPRECATED not necessary anymore
 lag_data <- function(data, catalog, lag_date) {
   lag_series <- function(data, col_name, which_date, catalog) {
     if (grepl("dep_cap", col_name)) {
@@ -85,20 +80,20 @@ lag_data <- function(data, catalog, lag_date) {
 }
 
 # update the plot data for the unctad nowcast web app
-update_nowcast_web_data <- function(unctad_nowcast_web_directory, latest_database, target_period, output_directory) {
-  data <- read_csv(paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv")) %>% data.frame %>% 
-    filter(!is.na(target_period))
-  for (targ in c("x_world", "x_servs_world", "x_vol_world2")) {
-    plot_data <- read_csv(paste0("output/", latest_database, "_", targ, "_plot_df.csv"))
-    data <- data %>%
-      filter(!((target == targ) & (target_period == !!target_period))) # getting rid of old data for this period
-    new_data <- plot_data %>% 
-      mutate(target=targ, target_period=target_period)
-    data <- rbind(data, new_data)
+update_nowcast_web_data <- function(unctad_nowcast_web_directory, latest_database, output_directory, news_directory) {
+  files <- list.files(news_directory)
+  for (filename in files) {
+    if (!exists("final_data")) {
+      final_data <- read_csv(paste0(news_directory, filename), col_types=cols())
+    } else {
+      tmp <- read_csv(paste0(news_directory, filename), col_types=cols())
+      final_data <- final_data %>% 
+        rbind(tmp)
+    }
   }
-  data <- data %>%
-    mutate(target_period=as.Date(target_period, origin="1970-01-01"))
-  write_csv(data, paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv"))
+  
+  # writing to bokeh app
+  write_csv(final_data, paste0(unctad_nowcast_web_directory, "nowcasts/data/data.csv"))
   
   # moving the latest database, adding full # of rows if necessary
   add.months <- function(date,n) seq(date, by = paste (n, "months"), length = 2)[2]

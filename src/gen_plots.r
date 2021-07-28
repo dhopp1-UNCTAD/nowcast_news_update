@@ -12,41 +12,34 @@ get_databases <- function (output_directory) {
 }
 
 # generating the plots
-gen_plots <- function (database_dates, latest_database, target_variable, target_period, reestimate, save_directory) {
+gen_plots <- function (database_dates, latest_database, target_variable, target_period, training_date, save_directory) {
   weekly_start <- as.Date("2020-08-07") # when weekly data started being gathered
+  vars <- catalog[catalog[,paste0(target_variable, "_block_1")] > 0,] %>% select(code, !!paste0(target_variable, "_block_1")) %>% arrange(!!sym(paste0(target_variable, "_block_1"))) %>% select(code) %>% pull
   
-  if (reestimate==TRUE) {
+  # check if model already estimated
+  model_path <- paste0("estimated_models/", target_variable, "/", training_date, ".rds")
+  if (file.exists(model_path)) {
+    output_dfm <- readRDS(model_path)
+  } else { # estimate it if not
+    model_data <- read_csv(paste0(output_directory, training_date, "_database_tf.csv")) %>% data.frame
+    model_data <- model_data[,c("date", vars)]
     p <- catalog %>% select(!!paste0(target_variable, "_p")) %>% slice(1) %>% pull
-    vars <- catalog[catalog[,paste0(target_variable, "_block_1")] > 0,] %>% select(code, !!paste0(target_variable, "_block_1")) %>% arrange(!!sym(paste0(target_variable, "_block_1"))) %>% select(code) %>% pull
-    model_data <- data[,c("date", vars)] # maybe need to only go up to 2019 for model estimation
     blocks <- data.frame(x=rep(1, ncol(model_data)-1))
     output_dfm <- dfm(model_data, blocks, p, max_iter=1500)
-  } else {
-    vars <- catalog[catalog[,paste0(target_variable, "_block_1")] > 0,] %>% select(code, !!paste0(target_variable, "_block_1")) %>% arrange(!!sym(paste0(target_variable, "_block_1"))) %>% select(code) %>% pull
-    output_dfm <- readRDS(reestimate)
+    saveRDS(output_dfm, model_path)
   }
   
-  # add artificial lag months
-  which_months <- c((seq(target_period, length=4, by="-1 months") %>% sort), (seq(target_period, length=5, by="1 months") %>% sort)) %>% unique
-  which_months <- which_months[which_months < weekly_start] # only do artificial lags for when before started getting data weekly
-  which_months <- which_months[which_months < Sys.Date()]
-  which_months <- which_months[!(which_months %in% as.Date(database_dates[database_dates >= weekly_start]))] # don't add dates already in the manual database dates
+  # creating list of dataframe data
   df_list <- list()
-  for (month in which_months) {
-    df_list[[length(df_list)+1]] <- lag_data(data, catalog, month) %>% select(c("date", vars))
-  }
-  # add manual databases
-  if (T) {
-    for (db_date in database_dates[database_dates >= weekly_start]) {
-      db_date <- as.Date(db_date, origin="1970-01-01")
-      df_list[[length(df_list)+1]] <- read_csv(paste0(output_directory, as.character(db_date), "_database_tf.csv")) %>% data.frame %>% select(c("date", vars))
-      which_months[length(which_months) + 1] <- as.Date(db_date)
-    } 
-  }
+  for (db_date in database_dates) {
+    db_date <- as.Date(db_date, origin="1970-01-01")
+    df_list[[length(df_list)+1]] <- read_csv(paste0(output_directory, as.character(db_date), "_database_tf.csv"), col_types=cols()) %>% data.frame %>% select(c("date", vars))
+  } 
   
-  rm("final_df")
-  result <- gen_news_graphs(output_dfm, target_variable, target_period, which_months, df_list)
-  ggsave(paste0(save_directory, latest_database, "_", target_variable, "_plot.png"), height=10, width=10)
+  rm("final_df") # has to be removed because created in the gen_news_graph function
+  result <- gen_news_graphs(output_dfm, target_variable, target_period, database_dates, df_list)
   plot_df <- result$plot_df
-  write_csv(plot_df, paste0(save_directory, latest_database, "_", target_variable, "_plot_df.csv"))  
+  plot_df <- plot_df %>% 
+    mutate(target = target_variable, target_period = target_period)
+  write_csv(plot_df, paste0(save_directory, target_variable, "_", target_period, ".csv"))  
 }
