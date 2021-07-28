@@ -28,8 +28,6 @@ while (as.numeric(difftime(
     as.character(seq(as.Date(max(target_periods)), by = paste (3, "months"), length = 2)[2])
   )
 }
-#!!! TMP
-target_periods <- target_periods[1:2]
 
 for (target_period in target_periods) {
   target_period <- as.Date(target_period)
