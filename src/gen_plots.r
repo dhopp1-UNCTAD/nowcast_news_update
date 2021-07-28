@@ -25,7 +25,13 @@ gen_plots <- function (database_dates, latest_database, target_variable, target_
     model_data <- model_data[,c("date", vars)]
     p <- catalog %>% select(!!paste0(target_variable, "_p")) %>% slice(1) %>% pull
     blocks <- data.frame(x=rep(1, ncol(model_data)-1))
-    output_dfm <- dfm(model_data, blocks, p, max_iter=1500)
+    
+    # if there's an error in estimating the DFM, take the last working model
+    tryCatch({
+      output_dfm <- dfm(model_data, blocks, p, max_iter=1500)  
+    }, error = function(e) {
+      output_dfm <<- readRDS(paste0("estimated_models/", target_variable, "/", max(list.files(paste0("estimated_models/", target_variable)))))  
+    })
     saveRDS(output_dfm, model_path)
   }
   
