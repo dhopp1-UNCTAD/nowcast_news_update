@@ -31,7 +31,7 @@ gen_plots <- function (database_dates, latest_database, target_variable, target_
       output_dfm <- dfm(model_data, blocks, p, max_iter=1500)  
     }, error = function(e) {
       output_dfm <<- readRDS(paste0("estimated_models/", target_variable, "/", max(list.files(paste0("estimated_models/", target_variable)))))  
-    })
+    }, silent=TRUE)
     saveRDS(output_dfm, model_path)
   }
   
